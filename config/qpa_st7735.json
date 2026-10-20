@@ -1,0 +1,19 @@
+{
+    "spi": {
+        "device": "/dev/spidev1.1",
+        "speed": 32000000
+    },
+    "gpio": {
+        "cs": 74,
+        "dc": 71,
+        "rst": 78
+    },
+    "panel": {
+        "width": 128,
+        "height": 160,
+        "initSpeedHz": 1000000
+    },
+    "fonts": {
+        "dir": "/usr/share/fonts/truetype/dejavu"
+    }
+}

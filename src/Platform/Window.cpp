@@ -4,6 +4,7 @@
  */
 
 #include "Window.hpp"
+#include "Screen.hpp"
 
 #include <qpa/qwindowsysteminterface.h>
 

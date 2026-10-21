@@ -12,3 +12,8 @@ add_subdirectory(lib)
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Gui)
 add_subdirectory(src)
+
+option(QPA_ST7735_BUILD_QML "Build the QML demo application" ON)
+if(QPA_ST7735_BUILD_QML)
+    add_subdirectory(qml-app)
+endif()

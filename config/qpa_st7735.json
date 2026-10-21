@@ -15,5 +15,8 @@
     },
     "fonts": {
         "dir": "/usr/share/fonts/truetype/dejavu"
+    },
+    "input": {
+        "mouseDevice": "auto"
     }
 }

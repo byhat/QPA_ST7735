@@ -11,7 +11,9 @@
 
 #include <memory>
 
+class MouseDevice;
 class QpaSt7735Screen;
+class SoftwareCursor;
 class QPlatformFontDatabase;
 class SpidevBus;
 class SysfsGpioLine;
@@ -84,6 +86,8 @@ private:
     std::unique_ptr<SysfsGpioLine> m_dataCommand;  ///< линия DC
     std::unique_ptr<SysfsGpioLine> m_reset;        ///< линия RST
     std::unique_ptr<St7735Driver> m_driver;        ///< драйвер панели
+    std::unique_ptr<SoftwareCursor> m_cursor;     ///< видимый курсор мыши
+    std::unique_ptr<MouseDevice> m_mouse;         ///< устройство мыши evdev
     mutable std::unique_ptr<QPlatformFontDatabase> m_fontDatabase; ///< создаётся лениво
     QpaSt7735Screen *m_screen = nullptr;           ///< экран; владение передано Qt
 };

@@ -24,6 +24,7 @@ QpaConfig defaultConfig()
     config.panel.initSpeedHz = 1'000'000;
     config.panel.dataSpeedHz = 32'000'000;
     config.fontDir = QStringLiteral("/usr/share/fonts/truetype/dejavu");
+    config.mouseDevice = QStringLiteral("auto");
     return config;
 }
 
@@ -61,6 +62,10 @@ void applyJson(QpaConfig &config, const QString &path)
     const QJsonObject fonts = root.value(QLatin1String("fonts")).toObject();
     config.fontDir = fonts.value(QLatin1String("dir")).toString(config.fontDir);
 
+    const QJsonObject input = root.value(QLatin1String("input")).toObject();
+    config.mouseDevice =
+        input.value(QLatin1String("mouseDevice")).toString(config.mouseDevice);
+
     qInfo("qpast7735: config: %s", qPrintable(path));
 }
 
@@ -89,6 +94,11 @@ QString findConfigFile()
 
 void applyEnvironment(QpaConfig &config)
 {
+    const QString mouse = qEnvironmentVariable("QT_INPUT_MOUSE");
+    if (!mouse.isEmpty()) {
+        config.mouseDevice = mouse;
+    }
+
     const QString device = qEnvironmentVariable("QT_SPI_DEV");
     if (!device.isEmpty()) {
         config.spiDevice = device;

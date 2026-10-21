@@ -8,6 +8,7 @@
 #include <QImage>
 #include <qpa/qplatformbackingstore.h>
 
+class SoftwareCursor;
 class St7735Driver;
 
 /**
@@ -19,11 +20,13 @@ class QpaSt7735BackingStore : public QPlatformBackingStore
 {
 public:
     /**
-     * @brief Создаёт backing store и запоминает драйвер панели.
+     * @brief Создаёт backing store, запоминает драйвер и курсор.
      * @param window окно верхнего уровня
      * @param driver драйвер панели; не владеется
+     * @param cursor софтверный курсор; не владеется
      */
-    QpaSt7735BackingStore(QWindow *window, St7735Driver *driver);
+    QpaSt7735BackingStore(QWindow *window, St7735Driver *driver,
+                          SoftwareCursor *cursor);
 
     /**
      * @brief Устройство рисования для QPainter.
@@ -52,5 +55,6 @@ public:
 
 private:
     St7735Driver *m_driver; ///< драйвер панели; не владеется
+    SoftwareCursor *m_cursor; ///< курсор, рисуется поверх кадра; не владеется
     QImage m_image;         ///< полотно окна Format_RGB16
 };

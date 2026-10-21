@@ -21,6 +21,7 @@ struct QpaConfig
     int resetPin;               ///< глобальный номер GPIO линии RST
     St7735Driver::Config panel; ///< параметры панели и скоростей
     QString fontDir;            ///< каталог шрифтов; пустая строка = fontconfig
+    QString mouseDevice;        ///< мышь: путь /dev/input/event* или "auto"
 };
 
 /**

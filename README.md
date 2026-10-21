@@ -42,6 +42,47 @@ GPIO numbers are global kernel line numbers (the "GPIO" column of
 `/dev/spidev1.1` exists (Armbian: `overlays=spi-spidev` in
 `/boot/armbianEnv.txt`).
 
+## Finding GPIO numbers on your board
+
+GPIO numbering differs between boards and SoCs. The numbers used in
+the JSON config and in the wiring table above are **global kernel line
+numbers**, not physical header pins and not WiringPi/wPi numbers. Use
+one of the following ways to find them for your board.
+
+**Allwinner formula (H3/H6/H616/H618...).** Pins are named like PC7:
+port letter C, pin 7 inside the port. The global number is
+`(letter - 'A' + 1 - 1) * 32 + pin`, i.e. ports are 32 lines wide:
+
+    PC7  -> (3 - 1) * 32 + 7  = 71
+    PC10 -> (3 - 1) * 32 + 10 = 74
+    PC14 -> (3 - 1) * 32 + 14 = 78
+
+**gpioinfo (libgpiod, available on most distros).** Lists every line
+with its name; the number in front is what goes into the config:
+
+    gpioinfo | grep -i "PC7"
+
+**gpio readall (WiringOP).** The "GPIO" column (not "wPi", not
+"Physical") contains the same global numbers. On the Orange Pi Zero 3:
+
+    +------+-----+----------+--------+---+  H616  +---+--------+
+    | GPIO | wPi |   Name   |  Mode  | V | Physical | ...       |
+    |   71 |  13 |      PC7 |   OUT  | 1 |  22 || ...           |
+    |   74 |  16 |     PC10 |   OUT  | 1 |  26 || ...           |
+    |   78 |  10 |     PC14 |   OUT  | 1 |  18 || ...           |
+
+**sysfs check.** Export a number and see whether the expected
+directory appears:
+
+    echo 71 | sudo tee /sys/class/gpio/export
+    ls /sys/class/gpio/gpio71   # exists -> the number is valid
+
+Note that line names and offsets can change between kernel versions
+and device-tree overlays; always re-check after a board or kernel
+update. On non-Allwinner boards (Rockchip, Amlogic, ...) use the
+SoC datasheet or `gpioinfo` names — the "32 lines per port" rule does
+not apply there.
+
 ## Requirements
 
 On the target board:

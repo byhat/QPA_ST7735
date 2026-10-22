@@ -7,7 +7,6 @@
 #include "BackingStore.hpp"
 #include "Screen.hpp"
 #include "Window.hpp"
-#include "../Input/MouseDevice.hpp"
 #include "SpidevBus.hpp"
 #include "St7735Driver.hpp"
 #include "SysfsGpioLine.hpp"
@@ -34,27 +33,6 @@ QpaSt7735Integration::QpaSt7735Integration()
 
     m_screen = new QpaSt7735Screen(m_config.panel.width, m_config.panel.height);
     QWindowSystemInterface::handleScreenAdded(m_screen);
-
-    m_cursor = std::make_unique<SoftwareCursor>(m_config.panel.width,
-                                                m_config.panel.height);
-    try {
-        m_mouse = std::make_unique<MouseDevice>(
-            m_config.mouseDevice.toStdString(), m_cursor.get(),
-            m_config.panel.width, m_config.panel.height,
-            [this](const QPointF &position, Qt::MouseButtons buttons) {
-                const QWindowList windows = m_screen->windows();
-                if (windows.isEmpty()) {
-                    return;
-                }
-                QWindow *window = windows.last();
-                QWindowSystemInterface::handleMouseEvent(window, position,
-                                                         position, buttons);
-                QWindowSystemInterface::handleExposeEvent(window,
-                                                          m_screen->geometry());
-            });
-    } catch (const std::exception &error) {
-        qWarning("qpast7735: mouse unavailable: %s", error.what());
-    }
 }
 
 QpaSt7735Integration::~QpaSt7735Integration()
@@ -77,7 +55,7 @@ QPlatformWindow *QpaSt7735Integration::createPlatformWindow(QWindow *window) con
 
 QPlatformBackingStore *QpaSt7735Integration::createPlatformBackingStore(QWindow *window) const
 {
-    return new QpaSt7735BackingStore(window, m_driver.get(), m_cursor.get());
+    return new QpaSt7735BackingStore(window, m_driver.get());
 }
 
 QAbstractEventDispatcher *QpaSt7735Integration::createEventDispatcher() const

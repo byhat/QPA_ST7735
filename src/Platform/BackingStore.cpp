@@ -4,16 +4,11 @@
  */
 
 #include "BackingStore.hpp"
-#include "../Input/MouseDevice.hpp"
 #include "St7735Driver.hpp"
 
-#include <QPainter>
-
-QpaSt7735BackingStore::QpaSt7735BackingStore(QWindow *window, St7735Driver *driver,
-                                             SoftwareCursor *cursor)
+QpaSt7735BackingStore::QpaSt7735BackingStore(QWindow *window, St7735Driver *driver)
     : QPlatformBackingStore(window)
     , m_driver(driver)
-    , m_cursor(cursor)
 {
 }
 
@@ -33,11 +28,6 @@ void QpaSt7735BackingStore::flush(QWindow *window, const QRegion &region,
 
     if (m_image.isNull()) {
         return;
-    }
-
-    if (m_cursor) {
-        QPainter painter(&m_image);
-        painter.drawImage(m_cursor->position(), m_cursor->image());
     }
 
     m_driver->blit(window->x(), window->y(), m_image.width(), m_image.height(),

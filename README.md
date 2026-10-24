@@ -29,7 +29,7 @@ QPA_ST7735/
 ├── src/                    QPA plugin "qpast7735"
 │   ├── Plugin/             plugin entry point + metadata.json
 │   ├── Platform/           Integration, Screen, Window, Cursor, BackingStore
-│   ├── Input/              MouseDevice: evdev mouse, software cursor input
+│   ├── Input/              MouseDevice, KeyboardDevice: evdev input
 │   └── Config/             JSON / environment configuration
 ├── config/qpa_st7735.json  default configuration for Orange Pi Zero 3
 ├── docs/real.jpg           photo of the reference setup
@@ -260,8 +260,24 @@ Mouse options in the JSON config:
 | `showCursor` | `true`  | `false` hides the software cursor; clicks and the wheel keep working |
 | `device`     | `"auto"`| explicit evdev node, e.g. `/dev/input/event3`       |
 
-Cursor movement is cheap: only the old and new cursor rectangles are
-re-sent to the panel (~0.5 ms instead of a full 10 ms frame).
+Cursor movement is decoupled from input processing: mouse events are
+delivered to the application immediately, while panel updates with the
+new cursor position are coalesced to at most ~30 per second.
+
+## Keyboard input
+
+A USB keyboard works the same way: the plugin reads it from evdev and
+delivers key presses/releases (with Shift/Ctrl/Alt/Meta modifiers,
+Caps Lock and autorepeat) via `QWindowSystemInterface::handleKeyEvent`,
+exactly like other QPA plugins. The US layout is generated internally —
+printable keys produce text, navigation and function keys send their
+Qt key codes. The device is autodetected (name with "keyboard", or a
+node that has KEY_Q/KEY_SPACE and no BTN_LEFT); options in the JSON
+config:
+
+```json
+"keyboard": { "enabled": true, "device": "auto" }
+```
 
 ## Troubleshooting
 
@@ -283,7 +299,8 @@ re-sent to the panel (~0.5 ms instead of a full 10 ms frame).
 ## Limitations
 
 - Raster rendering only, no OpenGL, no vsync.
-- Mouse only: no keyboard or touch input.
+- Mouse and keyboard only: no touch input.
+- Keyboard text is US-layout only.
 - Every window is stretched to the full 128x160 screen.
 - Each `flush()` sends a full frame (about 10 ms at 32 MHz); partial
   dirty regions are not used because Qt Quick incremental updates

@@ -11,6 +11,8 @@
 
 #include <memory>
 
+class FramePresenter;
+class KeyboardDevice;
 class MouseDevice;
 class QpaSt7735BackingStore;
 class QpaSt7735Screen;
@@ -86,8 +88,12 @@ private:
     std::unique_ptr<SysfsGpioLine> m_dataCommand;  ///< линия DC
     std::unique_ptr<SysfsGpioLine> m_reset;        ///< линия RST
     std::unique_ptr<St7735Driver> m_driver;        ///< драйвер панели
+    // m_presenter объявлен после m_driver и разрушается раньше него:
+    // поток отправки кадров обязан остановиться до освобождения шины
+    std::unique_ptr<FramePresenter> m_presenter;   ///< поток отправки кадров
     mutable std::unique_ptr<QPlatformFontDatabase> m_fontDatabase; ///< создаётся лениво
     QpaSt7735Screen *m_screen = nullptr;           ///< экран; владение передано Qt
     mutable std::unique_ptr<MouseDevice> m_mouseDevice; ///< мышь evdev; создаётся при первом окне
+    mutable std::unique_ptr<KeyboardDevice> m_keyboardDevice; ///< клавиатура evdev; создаётся при первом окне
     mutable QpaSt7735BackingStore *m_activeBackingStore = nullptr; ///< последнее созданное; владение у Qt
 };

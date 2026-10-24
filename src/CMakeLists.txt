@@ -4,8 +4,10 @@ add_library(qpast7735 SHARED
     Platform/Screen.cpp
     Platform/Window.cpp
     Platform/Cursor.cpp
+    Platform/FramePresenter.cpp
     Platform/BackingStore.cpp
     Input/MouseDevice.cpp
+    Input/KeyboardDevice.cpp
     Config/Config.cpp
 )
 

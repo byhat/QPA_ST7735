@@ -5,17 +5,17 @@
 
 #include "BackingStore.hpp"
 #include "Cursor.hpp"
-#include "St7735Driver.hpp"
+#include "FramePresenter.hpp"
 
 #include <QPainter>
 
 #include <cstring>
 
 QpaSt7735BackingStore::QpaSt7735BackingStore(QWindow *window,
-                                             St7735Driver *driver,
+                                             FramePresenter *presenter,
                                              QpaSt7735Cursor *cursor)
     : QPlatformBackingStore(window)
-    , m_driver(driver)
+    , m_presenter(presenter)
     , m_cursor(cursor)
 {
 }
@@ -42,7 +42,7 @@ void QpaSt7735BackingStore::flush(QWindow *window, const QRegion &region,
 
 void QpaSt7735BackingStore::presentFrame()
 {
-    if (m_image.isNull() || m_driver == nullptr) {
+    if (m_image.isNull() || m_presenter == nullptr) {
         return;
     }
 
@@ -57,8 +57,5 @@ void QpaSt7735BackingStore::presentFrame()
         m_cursor->paint(&painter);
     }
 
-    m_driver->blit(window()->x(), window()->y(), m_composite.width(),
-                   m_composite.height(),
-                   reinterpret_cast<const std::uint16_t *>(m_composite.constBits()),
-                   m_composite.bytesPerLine());
+    m_presenter->submit(m_composite);
 }

@@ -8,13 +8,13 @@
 #include <QImage>
 #include <qpa/qplatformbackingstore.h>
 
+class FramePresenter;
 class QpaSt7735Cursor;
-class St7735Driver;
 
 /**
  * @class QpaSt7735BackingStore
- * @brief Qt рисует в QImage Format_RGB16, публикация льёт кадр на панель
- *        через St7735Driver::blit() с курсорным оверлеем сверху.
+ * @brief Qt рисует в QImage Format_RGB16, готовый кадр с курсорным
+ *        оверлеем уходит на панель через FramePresenter.
  *
  * Курсор рисуется на отдельной копии кадра: если бы он попал в само
  * полотно окна, инкрементальные перерисовки оставляли бы след.
@@ -23,12 +23,12 @@ class QpaSt7735BackingStore : public QPlatformBackingStore
 {
 public:
     /**
-     * @brief Создаёт backing store и запоминает драйвер панели и курсор.
+     * @brief Создаёт backing store и запоминает курсор и презентер.
      * @param window окно верхнего уровня
-     * @param driver драйвер панели; не владеется
+     * @param presenter поток отправки кадров; не владеется
      * @param cursor курсор для оверлея; не владеется
      */
-    QpaSt7735BackingStore(QWindow *window, St7735Driver *driver,
+    QpaSt7735BackingStore(QWindow *window, FramePresenter *presenter,
                           QpaSt7735Cursor *cursor);
 
     /**
@@ -65,7 +65,7 @@ public:
     void presentFrame();
 
 private:
-    St7735Driver *m_driver;      ///< драйвер панели; не владеется
+    FramePresenter *m_presenter; ///< поток отправки кадров; не владеется
     QpaSt7735Cursor *m_cursor;   ///< курсорный оверлей; не владеется
     QImage m_image;              ///< полотно окна Format_RGB16
     QImage m_composite;          ///< копия кадра с курсором для панели

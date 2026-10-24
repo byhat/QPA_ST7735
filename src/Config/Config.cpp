@@ -69,6 +69,13 @@ void applyJson(QpaConfig &config, const QString &path)
     config.mouseEnabled = mouse.value(QLatin1String("enabled")).toBool(config.mouseEnabled);
     config.mouseShowCursor = mouse.value(QLatin1String("showCursor")).toBool(config.mouseShowCursor);
 
+    const QJsonObject keyboard = root.value(QLatin1String("keyboard")).toObject();
+    config.keyboardEnabled = keyboard.value(QLatin1String("enabled")).toBool(config.keyboardEnabled);
+    const QString keyboardDevice = keyboard.value(QLatin1String("device")).toString(config.keyboardDevice);
+    if (keyboardDevice != QLatin1String("auto")) {
+        config.keyboardDevice = keyboardDevice; // "auto" означает автопоиск
+    }
+
     qInfo("qpast7735: config: %s", qPrintable(path));
 }
 

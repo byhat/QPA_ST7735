@@ -20,5 +20,9 @@
         "enabled": true,
         "showCursor": true,
         "device": "auto"
+    },
+    "keyboard": {
+        "enabled": true,
+        "device": "auto"
     }
 }

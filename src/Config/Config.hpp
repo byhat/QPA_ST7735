@@ -24,6 +24,8 @@ struct QpaConfig
     bool mouseEnabled = true;   ///< читать мышь и доставлять события
     bool mouseShowCursor = true; ///< рисовать программный курсор
     QString mouseDevice;        ///< evdev-устройство мыши; пустая строка = автопоиск
+    bool keyboardEnabled = true; ///< читать клавиатуру и доставлять события
+    QString keyboardDevice;     ///< evdev-устройство клавиатуры; пустая строка = автопоиск
 };
 
 /**

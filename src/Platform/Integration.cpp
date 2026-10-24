@@ -6,12 +6,16 @@
 #include "Integration.hpp"
 #include "BackingStore.hpp"
 #include "Cursor.hpp"
+#include "FramePresenter.hpp"
+#include "KeyboardDevice.hpp"
 #include "MouseDevice.hpp"
 #include "Screen.hpp"
 #include "Window.hpp"
 #include "SpidevBus.hpp"
 #include "St7735Driver.hpp"
 #include "SysfsGpioLine.hpp"
+
+#include <QTimer>
 
 #include <QtGui/private/qgenericunixeventdispatcher_p.h>
 #include <QtGui/private/qgenericunixfontdatabase_p.h>
@@ -29,6 +33,7 @@ QpaSt7735Integration::QpaSt7735Integration()
         m_driver = std::make_unique<St7735Driver>(
             *m_bus, *m_chipSelect, *m_dataCommand, *m_reset, m_config.panel);
         m_driver->initialize();
+        m_presenter = std::make_unique<FramePresenter>(*m_driver);
     } catch (const std::exception &error) {
         qWarning("qpast7735: init failed: %s", error.what());
     }
@@ -59,15 +64,26 @@ QPlatformWindow *QpaSt7735Integration::createPlatformWindow(QWindow *window) con
         // не регистрируются и никогда не срабатывают
         m_mouseDevice = std::make_unique<MouseDevice>(m_config.mouseDevice,
                                                       m_screen->st7735Cursor());
-        // движение курсора не трогает окно - кадр публикуется заново
-        // с оверлеем в новой позиции (частичные переносы курсора на
-        // этой панели дают артефакты)
-        QObject::connect(m_mouseDevice.get(), &MouseDevice::cursorMoved,
-                         m_mouseDevice.get(), [this]() {
+        // события мыши обрабатываются сразу, а публикация кадров с
+        // курсором коалесцируется: не чаще раза в 33 мс, иначе полный
+        // кадр (~10 мс SPI) на каждый пачку событий подвешивает ввод
+        QTimer *cursorRefresh = new QTimer(m_mouseDevice.get());
+        cursorRefresh->setSingleShot(true);
+        cursorRefresh->setInterval(33);
+        QObject::connect(cursorRefresh, &QTimer::timeout, m_mouseDevice.get(), [this]() {
             if (m_activeBackingStore != nullptr) {
                 m_activeBackingStore->presentFrame();
             }
         });
+        QObject::connect(m_mouseDevice.get(), &MouseDevice::cursorMoved,
+                         m_mouseDevice.get(), [cursorRefresh]() {
+            if (!cursorRefresh->isActive()) {
+                cursorRefresh->start();
+            }
+        });
+    }
+    if (m_keyboardDevice == nullptr && m_config.keyboardEnabled) {
+        m_keyboardDevice = std::make_unique<KeyboardDevice>(m_config.keyboardDevice);
     }
     return new QpaSt7735Window(window);
 }
@@ -75,7 +91,7 @@ QPlatformWindow *QpaSt7735Integration::createPlatformWindow(QWindow *window) con
 QPlatformBackingStore *QpaSt7735Integration::createPlatformBackingStore(QWindow *window) const
 {
     m_activeBackingStore = new QpaSt7735BackingStore(
-        window, m_driver.get(), m_screen->st7735Cursor());
+        window, m_presenter.get(), m_screen->st7735Cursor());
     return m_activeBackingStore;
 }
 

@@ -5,6 +5,8 @@
 
 #include "Integration.hpp"
 #include "BackingStore.hpp"
+#include "Cursor.hpp"
+#include "MouseDevice.hpp"
 #include "Screen.hpp"
 #include "Window.hpp"
 #include "SpidevBus.hpp"
@@ -33,6 +35,7 @@ QpaSt7735Integration::QpaSt7735Integration()
 
     m_screen = new QpaSt7735Screen(m_config.panel.width, m_config.panel.height);
     QWindowSystemInterface::handleScreenAdded(m_screen);
+    m_screen->st7735Cursor()->setShowCursor(m_config.mouseShowCursor);
 }
 
 QpaSt7735Integration::~QpaSt7735Integration()
@@ -50,12 +53,30 @@ bool QpaSt7735Integration::hasCapability(Capability cap) const
 
 QPlatformWindow *QpaSt7735Integration::createPlatformWindow(QWindow *window) const
 {
+    if (m_mouseDevice == nullptr && m_config.mouseEnabled) {
+        // создаём здесь, а не в конструкторе: интеграция строится до
+        // event dispatcher, и notifier/timer, созданные раньше него,
+        // не регистрируются и никогда не срабатывают
+        m_mouseDevice = std::make_unique<MouseDevice>(m_config.mouseDevice,
+                                                      m_screen->st7735Cursor());
+        // движение курсора не трогает окно - кадр публикуется заново
+        // с оверлеем в новой позиции (частичные переносы курсора на
+        // этой панели дают артефакты)
+        QObject::connect(m_mouseDevice.get(), &MouseDevice::cursorMoved,
+                         m_mouseDevice.get(), [this]() {
+            if (m_activeBackingStore != nullptr) {
+                m_activeBackingStore->presentFrame();
+            }
+        });
+    }
     return new QpaSt7735Window(window);
 }
 
 QPlatformBackingStore *QpaSt7735Integration::createPlatformBackingStore(QWindow *window) const
 {
-    return new QpaSt7735BackingStore(window, m_driver.get());
+    m_activeBackingStore = new QpaSt7735BackingStore(
+        window, m_driver.get(), m_screen->st7735Cursor());
+    return m_activeBackingStore;
 }
 
 QAbstractEventDispatcher *QpaSt7735Integration::createEventDispatcher() const

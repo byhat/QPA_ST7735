@@ -61,6 +61,14 @@ void applyJson(QpaConfig &config, const QString &path)
     const QJsonObject fonts = root.value(QLatin1String("fonts")).toObject();
     config.fontDir = fonts.value(QLatin1String("dir")).toString(config.fontDir);
 
+    const QJsonObject mouse = root.value(QLatin1String("mouse")).toObject();
+    const QString mouseDevice = mouse.value(QLatin1String("device")).toString(config.mouseDevice);
+    if (mouseDevice != QLatin1String("auto")) {
+        config.mouseDevice = mouseDevice; // "auto" означает автопоиск
+    }
+    config.mouseEnabled = mouse.value(QLatin1String("enabled")).toBool(config.mouseEnabled);
+    config.mouseShowCursor = mouse.value(QLatin1String("showCursor")).toBool(config.mouseShowCursor);
+
     qInfo("qpast7735: config: %s", qPrintable(path));
 }
 
@@ -92,6 +100,11 @@ void applyEnvironment(QpaConfig &config)
     const QString device = qEnvironmentVariable("QT_SPI_DEV");
     if (!device.isEmpty()) {
         config.spiDevice = device;
+    }
+
+    const QString mouseDevice = qEnvironmentVariable("QT_MOUSE_DEV");
+    if (!mouseDevice.isEmpty()) {
+        config.mouseDevice = mouseDevice;
     }
 
     if (qEnvironmentVariableIsSet("QT_SPI_SPEED")) {

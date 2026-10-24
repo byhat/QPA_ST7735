@@ -11,6 +11,8 @@
 
 #include <memory>
 
+class MouseDevice;
+class QpaSt7735BackingStore;
 class QpaSt7735Screen;
 class QPlatformFontDatabase;
 class SpidevBus;
@@ -20,7 +22,7 @@ class St7735Driver;
 /**
  * @class QpaSt7735Integration
  * @brief Собирает платформу: HAL из lib, драйвер панели, экран, окна,
- *        backing store, шрифты, event loop.
+ *        backing store, шрифты, мышь, event loop.
  *
  * Если инициализация дисплея не удалась (нет spidev/GPIO/прав), экран
  * всё равно создаётся, а вывод игнорируется - приложение остаётся живым.
@@ -86,4 +88,6 @@ private:
     std::unique_ptr<St7735Driver> m_driver;        ///< драйвер панели
     mutable std::unique_ptr<QPlatformFontDatabase> m_fontDatabase; ///< создаётся лениво
     QpaSt7735Screen *m_screen = nullptr;           ///< экран; владение передано Qt
+    mutable std::unique_ptr<MouseDevice> m_mouseDevice; ///< мышь evdev; создаётся при первом окне
+    mutable QpaSt7735BackingStore *m_activeBackingStore = nullptr; ///< последнее созданное; владение у Qt
 };

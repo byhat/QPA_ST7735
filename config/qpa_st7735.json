@@ -15,5 +15,10 @@
     },
     "fonts": {
         "dir": "/usr/share/fonts/truetype/dejavu"
+    },
+    "mouse": {
+        "enabled": true,
+        "showCursor": true,
+        "device": "auto"
     }
 }

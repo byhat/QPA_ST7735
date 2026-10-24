@@ -4,11 +4,19 @@
  */
 
 #include "BackingStore.hpp"
+#include "Cursor.hpp"
 #include "St7735Driver.hpp"
 
-QpaSt7735BackingStore::QpaSt7735BackingStore(QWindow *window, St7735Driver *driver)
+#include <QPainter>
+
+#include <cstring>
+
+QpaSt7735BackingStore::QpaSt7735BackingStore(QWindow *window,
+                                             St7735Driver *driver,
+                                             QpaSt7735Cursor *cursor)
     : QPlatformBackingStore(window)
     , m_driver(driver)
+    , m_cursor(cursor)
 {
 }
 
@@ -29,8 +37,28 @@ void QpaSt7735BackingStore::flush(QWindow *window, const QRegion &region,
     if (m_image.isNull()) {
         return;
     }
+    presentFrame();
+}
 
-    m_driver->blit(window->x(), window->y(), m_image.width(), m_image.height(),
-                   reinterpret_cast<const std::uint16_t *>(m_image.constBits()),
-                   m_image.bytesPerLine());
+void QpaSt7735BackingStore::presentFrame()
+{
+    if (m_image.isNull() || m_driver == nullptr) {
+        return;
+    }
+
+    if (m_composite.size() != m_image.size()) {
+        m_composite = QImage(m_image.size(), m_image.format());
+    }
+    std::memcpy(m_composite.bits(), m_image.constBits(),
+                static_cast<std::size_t>(m_image.sizeInBytes()));
+
+    {
+        QPainter painter(&m_composite);
+        m_cursor->paint(&painter);
+    }
+
+    m_driver->blit(window()->x(), window()->y(), m_composite.width(),
+                   m_composite.height(),
+                   reinterpret_cast<const std::uint16_t *>(m_composite.constBits()),
+                   m_composite.bytesPerLine());
 }

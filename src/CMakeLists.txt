@@ -3,13 +3,16 @@ add_library(qpast7735 SHARED
     Platform/Integration.cpp
     Platform/Screen.cpp
     Platform/Window.cpp
+    Platform/Cursor.cpp
     Platform/BackingStore.cpp
+    Input/MouseDevice.cpp
     Config/Config.cpp
 )
 
 target_include_directories(qpast7735 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Plugin
     ${CMAKE_CURRENT_SOURCE_DIR}/Platform
+    ${CMAKE_CURRENT_SOURCE_DIR}/Input
     ${CMAKE_CURRENT_SOURCE_DIR}/Config
 )
 

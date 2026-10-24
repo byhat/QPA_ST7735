@@ -28,11 +28,12 @@ QPA_ST7735/
 │   └── example/            st7735-example: draws colored squares at 32 MHz
 ├── src/                    QPA plugin "qpast7735"
 │   ├── Plugin/             plugin entry point + metadata.json
-│   ├── Platform/           Integration, Screen, Window, BackingStore
+│   ├── Platform/           Integration, Screen, Window, Cursor, BackingStore
+│   ├── Input/              MouseDevice: evdev mouse, software cursor input
 │   └── Config/             JSON / environment configuration
 ├── config/qpa_st7735.json  default configuration for Orange Pi Zero 3
 ├── docs/real.jpg           photo of the reference setup
-└── qml-app/                QML demo (text, clock, counter, button)
+└── qml-app/                QML demo (clock, text input, scroll view, button)
 ```
 
 ## Wiring (Orange Pi Zero 3, 26-pin header)
@@ -209,7 +210,8 @@ The plugin looks for a JSON file in this order (first existing wins):
     "spi":   { "device": "/dev/spidev1.1", "speed": 32000000 },
     "gpio":  { "cs": 74, "dc": 71, "rst": 78 },
     "panel": { "width": 128, "height": 160, "initSpeedHz": 1000000 },
-    "fonts": { "dir": "/usr/share/fonts/truetype/dejavu" }
+    "fonts": { "dir": "/usr/share/fonts/truetype/dejavu" },
+    "mouse": { "enabled": true, "showCursor": true, "device": "auto" }
 }
 ```
 
@@ -222,11 +224,44 @@ Environment variables override JSON (handy for quick experiments):
 | `QT_SPI_GPIO_CS`  | chip-select GPIO number                   |
 | `QT_SPI_GPIO_DC`  | data/command GPIO number                  |
 | `QT_SPI_GPIO_RST` | reset GPIO number                         |
+| `QT_MOUSE_DEV`    | mouse evdev device, e.g. `/dev/input/event3` |
 
 Notes on speeds: single commands (init sequence) are always sent at
 1 MHz — the panel does not accept them at higher rates on this setup.
 Pixel data runs at `spi.speed`; 32 MHz is stable on short wires, drop
 it if you see artifacts.
+
+## Mouse input
+
+A USB mouse works out of the box: the plugin reads it directly from
+evdev (`/dev/input/event*`), delivers left/right/middle clicks and the
+wheel to the application like any other QPA plugin, and draws a
+software cursor on top of each frame (the panel has no hardware
+overlay). The cursor tip is clamped to the screen bounds, exactly like
+on a desktop. Reading `/dev/input` requires root — the same `sudo` the
+display already needs.
+
+The mouse device is autodetected (first evdev node with "mouse" in its
+name); pin it explicitly via `QT_MOUSE_DEV` or the JSON `mouse.device`.
+Without a mouse the plugin keeps working, and the cursor stays hidden
+until the first mouse event. Only `ArrowCursor` and `BlankCursor`
+shapes are honored — there is no cursor theme on the panel, everything
+else renders as the arrow.
+
+Mouse options in the JSON config:
+
+```json
+"mouse": { "enabled": true, "showCursor": true, "device": "auto" }
+```
+
+| Key          | Default | Effect                                              |
+|--------------|---------|-----------------------------------------------------|
+| `enabled`    | `true`  | `false` disables the mouse completely: no device is opened, no events are delivered |
+| `showCursor` | `true`  | `false` hides the software cursor; clicks and the wheel keep working |
+| `device`     | `"auto"`| explicit evdev node, e.g. `/dev/input/event3`       |
+
+Cursor movement is cheap: only the old and new cursor rectangles are
+re-sent to the panel (~0.5 ms instead of a full 10 ms frame).
 
 ## Troubleshooting
 
@@ -241,12 +276,14 @@ it if you see artifacts.
   directory that contains `libqpast7735.so` directly.
 - **QML shows "This plugin does not support createPlatformOpenGLContext"**:
   `QT_QUICK_BACKEND=software` is missing.
+- **Mouse does not move / no clicks**: run as root (`/dev/input/event*`
+  are root-only), check the device picked in the log
+  (`qpast7735: mouse: ...`), try `QT_MOUSE_DEV=/dev/input/eventN`.
 
 ## Limitations
 
 - Raster rendering only, no OpenGL, no vsync.
-- No input: no keyboard, mouse or touch events are delivered; on-screen
-  buttons render but do not click.
+- Mouse only: no keyboard or touch input.
 - Every window is stretched to the full 128x160 screen.
 - Each `flush()` sends a full frame (about 10 ms at 32 MHz); partial
   dirty regions are not used because Qt Quick incremental updates

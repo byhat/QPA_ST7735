@@ -7,6 +7,8 @@
 
 #include <qpa/qplatformscreen.h>
 
+class QpaSt7735Cursor;
+
 /**
  * @class QpaSt7735Screen
  * @brief Экран 128x160 RGB565; данные окон льются на панель напрямую
@@ -16,7 +18,7 @@ class QpaSt7735Screen : public QPlatformScreen
 {
 public:
     /**
-     * @brief Запоминает размеры экрана из конфигурации панели.
+     * @brief Запоминает размеры экрана и создаёт программный курсор.
      * @param width ширина экрана в пикселях
      * @param height высота экрана в пикселях
      */
@@ -63,7 +65,20 @@ public:
      */
     QString name() const override { return QStringLiteral("ST7735S SPI"); }
 
+    /**
+     * @brief Программный курсор экрана.
+     * @return курсор; владение за экраном
+     */
+    QPlatformCursor *cursor() const override;
+
+    /**
+     * @brief Доступ к курсору с типом плагина.
+     * @return курсор для композиции и синхронизации позиции
+     */
+    QpaSt7735Cursor *st7735Cursor() const { return m_cursor; }
+
 private:
-    int m_width;  ///< ширина экрана в пикселях
-    int m_height; ///< высота экрана в пикселях
+    int m_width;                  ///< ширина экрана в пикселях
+    int m_height;                 ///< высота экрана в пикселях
+    QpaSt7735Cursor *m_cursor;    ///< программный курсор; владение здесь
 };

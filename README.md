@@ -13,7 +13,7 @@ Qt 6.4). The library talks to the hardware through plain Linux system
 calls only: `spidev` ioctls for SPI and sysfs GPIO for the DC/CS/RST
 lines. No WiringOP, no libgpiod, no OpenGL.
 
-![ST7735 on Orange Pi Zero 3](docs/hardware.jpg)
+![ST7735 on Orange Pi Zero 3](docs/real.jpg)
 
 *The reference setup: 1.8" ST7735S 128x160 on an Orange Pi Zero 3,
 running a Qt Quick scene through the plugin.*
@@ -31,7 +31,7 @@ QPA_ST7735/
 │   ├── Platform/           Integration, Screen, Window, BackingStore
 │   └── Config/             JSON / environment configuration
 ├── config/qpa_st7735.json  default configuration for Orange Pi Zero 3
-├── docs/hardware.jpg       photo of the reference setup
+├── docs/real.jpg           photo of the reference setup
 └── qml-app/                QML demo (text, clock, counter, button)
 ```
 

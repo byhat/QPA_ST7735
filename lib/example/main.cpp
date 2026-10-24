@@ -3,7 +3,7 @@
  * @brief Демонстрация драйвера ST7735: сборка слоёв и заливка цветами.
  *
  * Слои собираются здесь: SpidevBus и SysfsGpioLine (доступ к железу)
- * передаются в St7735Driver по интерфейсам. Кадры формируются вектором
+ * передаются в St7735Driver по ссылке. Кадры формируются вектором
  * пикселей RGB565 и отдаются драйверу через blit() - тот же контракт,
  * что у QPA-плагина.
  */
@@ -13,7 +13,6 @@
 #include "St7735Driver.hpp"
 
 #include <cstdint>
-#include <iostream>
 #include <iostream>
 #include <string>
 #include <system_error>
@@ -31,7 +30,7 @@ constexpr int kChipSelectPin = 74;  ///< PC10, физический пин 26
 constexpr int kDataCommandPin = 71; ///< PC7, физический пин 22
 constexpr int kResetPin = 78;       ///< PC14, физический пин 18
 
-/// Параметры панели и скоростей: одиночные команды - 1 МГц, данные - 1 МГц.
+/// Параметры панели и скоростей: одиночные команды - 1 МГц, данные - 32 МГц.
 constexpr St7735Driver::Config kPanelConfig = {
     128, 160, 1'000'000, 32'000'000
 };

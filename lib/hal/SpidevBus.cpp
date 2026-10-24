@@ -1,5 +1,5 @@
 /**
- * @file spi_bus.cpp
+ * @file SpidevBus.cpp
  * @brief Реализация SpidevBus: open/ioctl/close поверх spidev.
  */
 

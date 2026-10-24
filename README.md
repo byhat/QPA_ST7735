@@ -1,13 +1,17 @@
 # QPA_ST7735
 
-Qt 6 QPA platform plugin that renders Qt applications directly on an
-ST7735 SPI display (128x160, RGB565). Developed and tested on
-**Orange Pi Zero 3** (H618, Ubuntu 24.04, Qt 6.4).
+Two components in one repository:
 
-The plugin is a thin Qt layer on top of a small dependency-free display
-library (`lib/`), which talks to the hardware through plain Linux
-system calls only: `spidev` ioctls for SPI and sysfs GPIO for the
-DC/CS/RST lines. No WiringOP, no libgpiod, no OpenGL.
+- **`src/`** — a Qt 6 QPA platform plugin (`qpast7735`) that renders Qt
+  applications directly on an ST7735 SPI display (128x160, RGB565);
+- **`lib/`** — a small dependency-free display driver library that can be
+  used on its own, without Qt, to init the panel, fill it and blit
+  rectangles.
+
+Developed and tested on **Orange Pi Zero 3** (H618, Ubuntu 24.04,
+Qt 6.4). The library talks to the hardware through plain Linux system
+calls only: `spidev` ioctls for SPI and sysfs GPIO for the DC/CS/RST
+lines. No WiringOP, no libgpiod, no OpenGL.
 
 ## Repository layout
 
@@ -51,7 +55,7 @@ one of the following ways to find them for your board.
 
 **Allwinner formula (H3/H6/H616/H618...).** Pins are named like PC7:
 port letter C, pin 7 inside the port. The global number is
-`(letter - 'A' + 1 - 1) * 32 + pin`, i.e. ports are 32 lines wide:
+`(letter - 'A') * 32 + pin`, i.e. ports are 32 lines wide:
 
     PC7  -> (3 - 1) * 32 + 7  = 71
     PC10 -> (3 - 1) * 32 + 10 = 74
@@ -85,7 +89,10 @@ not apply there.
 
 ## Requirements
 
-On the target board:
+For the display library alone (`lib/`) nothing beyond a C++17 compiler
+and CMake is needed.
+
+On the target board, for the plugin and the demo:
 
     sudo apt install build-essential cmake \
         qt6-base-dev qt6-base-private-dev qt6-base-dev-tools
@@ -98,7 +105,7 @@ For the QML demo additionally:
 
 ## Build
 
-Build everything on the board:
+Build everything (library + example + plugin + QML demo) on the board:
 
     cmake -B build -S .
     cmake --build build -j$(nproc)
@@ -107,6 +114,16 @@ Outputs:
 
 - `build/lib/example/st7735-example` — standalone library demo
 - `build/src/libqpast7735.so` — the QPA plugin
+
+### Building only the display library
+
+The library has no Qt dependency and builds on its own — useful for
+plain C++ projects that just want to draw on the panel:
+
+    cmake -B build-lib -S lib
+    cmake --build build-lib -j$(nproc)
+
+Output: `build-lib/example/st7735-example` (colored squares demo).
 
 ## Install the plugin
 
@@ -131,10 +148,6 @@ Root privileges are required for `/dev/spidev*` and GPIO export:
 
     sudo env QT_QPA_PLATFORM=qpast7735 ./your-app
 
-Quick check without a real app (should print the screen geometry):
-
-    sudo env QT_QPA_PLATFORM=qpast7735 ./build/lib/example/st7735-example
-
 Widgets and raster windows work out of the box. Qt Quick (QML) needs
 the software renderer because the plugin provides no OpenGL context:
 
@@ -146,6 +159,35 @@ the software renderer because the plugin provides no OpenGL context:
         $(pkg-config --cflags --libs Qt6Quick Qt6Qml Qt6Gui)
     sudo install -D qml-app/Main.qml /usr/local/share/qpast7735/Main.qml
     sudo env QT_QPA_PLATFORM=qpast7735 QT_QUICK_BACKEND=software /tmp/qml-demo
+
+## Using the display library directly
+
+Without any Qt, link against the `st7735` static library (or just add
+the six files of `lib/hal` and `lib/display` to your project):
+
+```cpp
+#include "SpidevBus.hpp"
+#include "SysfsGpioLine.hpp"
+#include "St7735Driver.hpp"
+
+SpidevBus bus("/dev/spidev1.1");
+SysfsGpioLine chipSelect(74);   // PC10
+SysfsGpioLine dataCommand(71);  // PC7
+SysfsGpioLine reset(78);        // PC14
+
+St7735Driver::Config config{128, 160, 1'000'000, 32'000'000};
+St7735Driver driver(bus, chipSelect, dataCommand, reset, config);
+driver.initialize();
+driver.fill(0xF800);  // red
+
+// partial update: pixels are RGB565 in native uint16_t order,
+// stride is the row pitch of the source buffer in bytes
+std::vector<std::uint16_t> patch(40 * 40, 0x07E0);
+driver.blit(10, 10, 40, 40, patch.data(), 40 * sizeof(std::uint16_t));
+```
+
+`lib/example/main.cpp` is a complete runnable demo: it clears the panel
+and draws colored squares one by one in different screen regions.
 
 ## Configuration
 
@@ -183,9 +225,10 @@ it if you see artifacts.
 ## Troubleshooting
 
 - **White screen**: check wiring (CS/DC/RST), check `ls /dev/spidev*`.
-- **Only the first frame renders**: the SPI controller runtime PM is
-  handled automatically (`power/control = on` is written when the bus
-  is opened); verify with
+- **Only the first frame renders**: the DC level must be re-asserted
+  before every scan line (the library does this); re-check the DC wire.
+  If the SPI controller suspends between rare updates, its state is
+  visible in
   `cat /sys/class/spi_master/spi1/device/power/runtime_status`.
 - **No Qt logs on the console**: add `QT_FORCE_STDERR_LOGGING=1`.
 - **Plugin not found**: `QT_QPA_PLATFORM_PLUGIN_PATH` must point to the

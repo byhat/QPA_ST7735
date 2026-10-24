@@ -1,6 +1,6 @@
 /**
- * @file gpio_line.cpp
- * @brief Реализация SysfsGpioLine: export/unexport и запись уровня.
+ * @file SysfsGpioLine.cpp
+ * @brief Реализация SysfsGpioLine: export и запись уровня.
  */
 
 #include "SysfsGpioLine.hpp"

@@ -16,9 +16,7 @@
  * @class St7735Driver
  * @brief Управляет панелью ST7735 через шину и GPIO-линии.
  *
- * Зависимости прокидываются извне по ссылке; для подмены реализации
- * достаточно передать объект класса-наследника SpidevBus или
- * SysfsGpioLine.
+ * Зависимости прокидываются извне по ссылке и должны переживать драйвер.
  *
  * Формат данных blit(): пиксели RGB565 в нативном порядке uint16_t
  * (little-endian, как QImage::Format_RGB16) с байтовым stride; драйвер
@@ -133,10 +131,6 @@ private:
 
     /// Значение MADCTL: без поворота и зеркалирования.
     static constexpr std::uint8_t kMemoryDataAccessControlDefault = 0x00;
-
-    /// Сколько NOP-передач шлётся перед кадром: меньше трёх драйвер шины
-    /// Orange Pi после предыдущей заливки не принимает команды.
-    static constexpr int kWarmupNopCount = 4;
 
     SpidevBus &bus_;     ///< шина передач (не владеется)
     SysfsGpioLine &chipSelect_;  ///< линия CS (не владеется)

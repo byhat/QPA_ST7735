@@ -38,15 +38,18 @@ QPA_ST7735/
 
 ## Wiring (Orange Pi Zero 3, 26-pin header)
 
-| Display pin | Board pin | Signal  | GPIO line |
-|-------------|-----------|---------|-----------|
-| VCC         | 1 or 17   | 3.3V    | -         |
+| Display pin | Board pin | Signal        | SoC pin |
+|-------------|-----------|---------------|---------|
+| VCC         | 1 or 17   | 3.3V          | -       |
 | GND         | 6/9/14/20/25 | GND  | -         |
 | SCL (SCK)   | 23        | SPI1 SCLK (PH6) | - (spidev) |
 | SDA (MOSI)  | 19        | SPI1 MOSI (PH7) | - (spidev) |
-| CS          | 26        | PC10    | 74        |
-| DC (A0)     | 22        | PC7     | 71        |
-| RESET       | 18        | PC14    | 78        |
+| CS          | 26        | chip-select  | PC10    |
+| DC (A0)     | 22        | data/command | PC7     |
+| RESET       | 18        | reset        | PC14    |
+
+The "Board pin" column is what goes into the config: GPIO lines are
+addressed by physical header pin numbers.
 
 GPIO lines are driven through WiringPi/WiringOP (see the next
 section). SPI must be enabled with a
@@ -173,13 +176,13 @@ the six files of `lib/hal` and `lib/display` to your project):
 
 ```cpp
 #include "SpidevBus.hpp"
-#include "SysfsGpioLine.hpp"
+#include "WiringGpioLine.hpp"
 #include "St7735Driver.hpp"
 
 SpidevBus bus("/dev/spidev1.1");
-SysfsGpioLine chipSelect(74);   // PC10
-SysfsGpioLine dataCommand(71);  // PC7
-SysfsGpioLine reset(78);        // PC14
+WiringGpioLine chipSelect(26);   // PC10, физический пин
+WiringGpioLine dataCommand(22);  // PC7
+WiringGpioLine reset(18);        // PC14
 
 St7735Driver::Config config{128, 160, 1'000'000, 32'000'000};
 St7735Driver driver(bus, chipSelect, dataCommand, reset, config);
@@ -213,7 +216,7 @@ lines, spidev device and panel parameters are all there.
 ```json
 {
     "spi":   { "device": "/dev/spidev1.1", "speed": 32000000 },
-    "gpio":  { "cs": 74, "dc": 71, "rst": 78 },
+    "gpio":  { "cs": 26, "dc": 22, "rst": 18 },
     "panel": { "width": 128, "height": 160, "initSpeedHz": 1000000 },
     "fonts": { "dir": "/usr/share/fonts/truetype/dejavu" },
     "mouse": { "enabled": true, "showCursor": true, "device": "auto" }

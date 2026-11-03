@@ -56,11 +56,15 @@ spidev overlay so that `/dev/spidev1.1` exists (Orange Pi:
 ## GPIO lines: WiringPi / WiringOP
 
 GPIO is driven through WiringPi (Raspberry Pi) or WiringOP (Orange Pi)
-with `wiringPiSetupGpio()` numbering — the **GPIO column** of
-`gpio readall`, not "wpi" and not the physical pin:
+with **physical header pin numbers** (`wiringPiSetupPhys()`) — the
+number of the pin you wired the display to:
 
     gpio readall | grep PC10
-    |      |  16 |     PC10 |   OUT  | 0 |  26 | ...   <- GPIO number 74
+    |      |  16 |     PC10 |   OUT  | 0 |  26 | ...   <- physical pin 26
+
+Do not use the GPIO-column numbers: the gpio-mode table of at least one
+WiringOP build (Zero 3) is broken and silently drives wrong pins,
+which shows up as colorful garbage on the panel.
 
 Install the library build for your board (WiringOP repositories are
 per-SoC; on Raspberry Pi use a WiringPi fork with Pi 5 support), then

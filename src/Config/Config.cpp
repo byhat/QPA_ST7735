@@ -16,9 +16,9 @@ QpaConfig defaultConfig()
 {
     QpaConfig config;
     config.spiDevice = QStringLiteral("/dev/spidev1.1");
-    config.chipSelectPin = 74;  // PC10, физический пин 26
-    config.dataCommandPin = 71; // PC7, физический пин 22
-    config.resetPin = 78;       // PC14, физический пин 18
+    config.chipSelectPin = 26;  // PC10, физический пин 26
+    config.dataCommandPin = 22; // PC7, физический пин 22
+    config.resetPin = 18;       // PC14, физический пин 18
     config.panel.width = 128;
     config.panel.height = 160;
     config.panel.initSpeedHz = 1'000'000;

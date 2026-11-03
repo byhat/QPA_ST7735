@@ -19,9 +19,9 @@ std::once_flag setupOnce;
 void WiringGpioLine::ensureSetup()
 {
     std::call_once(setupOnce, []() {
-        if (wiringPiSetupGpio() < 0) {
+        if (wiringPiSetupPhys() < 0) {
             throw std::runtime_error(
-                "wiringPi: wiringPiSetupGpio() не удался (нет прав на /dev/mem?)");
+                "wiringPi: wiringPiSetupPhys() не удался (нет прав на /dev/mem?)");
         }
     });
 }

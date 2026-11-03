@@ -16,9 +16,9 @@
 struct QpaConfig
 {
     QString spiDevice;          ///< путь к spidev, например /dev/spidev1.1
-    int chipSelectPin;          ///< GPIO линия CS (колонка GPIO в gpio readall)
-    int dataCommandPin;         ///< GPIO линия DC
-    int resetPin;               ///< GPIO линия RST
+    int chipSelectPin;          ///< CS: физический пин разъёма (wiringPiSetupPhys)
+    int dataCommandPin;         ///< DC: физический пин разъёма
+    int resetPin;               ///< RST: физический пин разъёма
     St7735Driver::Config panel; ///< параметры панели и скоростей
     QString fontDir;            ///< каталог шрифтов; пустая строка = fontconfig
     bool mouseEnabled = true;   ///< читать мышь и доставлять события

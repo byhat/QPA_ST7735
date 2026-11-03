@@ -8,8 +8,8 @@
 #include <chrono>
 #include <thread>
 
-St7735Driver::St7735Driver(SpidevBus &bus, GpioLine &chipSelect,
-                           GpioLine &dataCommand, GpioLine &reset,
+St7735Driver::St7735Driver(SpidevBus &bus, WiringGpioLine &chipSelect,
+                           WiringGpioLine &dataCommand, WiringGpioLine &reset,
                            const Config &config)
     : bus_(bus)
     , chipSelect_(chipSelect)

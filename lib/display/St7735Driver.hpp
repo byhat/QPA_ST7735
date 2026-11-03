@@ -6,7 +6,7 @@
 #pragma once
 
 #include "SpidevBus.hpp"
-#include "GpioLine.hpp"
+#include "WiringGpioLine.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -53,8 +53,8 @@ public:
      * @param reset линия аппаратного сброса панели
      * @param config параметры панели и скоростей
      */
-    St7735Driver(SpidevBus &bus, GpioLine &chipSelect,
-                 GpioLine &dataCommand, GpioLine &reset,
+    St7735Driver(SpidevBus &bus, WiringGpioLine &chipSelect,
+                 WiringGpioLine &dataCommand, WiringGpioLine &reset,
                  const Config &config);
 
     /**
@@ -133,9 +133,9 @@ private:
     static constexpr std::uint8_t kMemoryDataAccessControlDefault = 0x00;
 
     SpidevBus &bus_;     ///< шина передач (не владеется)
-    GpioLine &chipSelect_;  ///< линия CS (не владеется)
-    GpioLine &dataCommand_; ///< линия DC (не владеется)
-    GpioLine &reset_;       ///< линия RST (не владеется)
+    WiringGpioLine &chipSelect_;  ///< линия CS (не владеется)
+    WiringGpioLine &dataCommand_; ///< линия DC (не владеется)
+    WiringGpioLine &reset_;       ///< линия RST (не владеется)
     Config config_;      ///< параметры панели и скоростей
     std::vector<std::uint8_t> lineBuffer_; ///< строка пикселей в big-endian
 };

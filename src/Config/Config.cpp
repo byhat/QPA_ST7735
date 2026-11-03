@@ -16,9 +16,9 @@ QpaConfig defaultConfig()
 {
     QpaConfig config;
     config.spiDevice = QStringLiteral("/dev/spidev1.1");
-    config.chipSelectPin = 74;  // PC10, физический пин 26
-    config.dataCommandPin = 71; // PC7, физический пин 22
-    config.resetPin = 78;       // PC14, физический пин 18
+    config.chipSelectLine = QStringLiteral("74");   // PC10, физический пин 26
+    config.dataCommandLine = QStringLiteral("71");  // PC7, физический пин 22
+    config.resetLine = QStringLiteral("78");        // PC14, физический пин 18
     config.panel.width = 128;
     config.panel.height = 160;
     config.panel.initSpeedHz = 1'000'000;
@@ -48,9 +48,27 @@ void applyJson(QpaConfig &config, const QString &path)
         spi.value(QLatin1String("speed")).toInt(static_cast<int>(config.panel.dataSpeedHz)));
 
     const QJsonObject gpio = root.value(QLatin1String("gpio")).toObject();
-    config.chipSelectPin = gpio.value(QLatin1String("cs")).toInt(config.chipSelectPin);
-    config.dataCommandPin = gpio.value(QLatin1String("dc")).toInt(config.dataCommandPin);
-    config.resetPin = gpio.value(QLatin1String("rst")).toInt(config.resetPin);
+    // каждое значение - имя линии ("PC10"), "gpiochip0:17" или номер;
+    // объект {"chip": "...", "line": N} собирается в "chip:line"
+    const auto readLine = [&gpio](const char *key, QString current) {
+        const QJsonValue value = gpio.value(QLatin1String(key));
+        if (value.isString()) {
+            return value.toString();
+        }
+        if (value.isDouble()) {
+            return QString::number(value.toInt());
+        }
+        const QJsonObject explicitChip = value.toObject();
+        const QString chip = explicitChip.value(QLatin1String("chip")).toString();
+        const int line = explicitChip.value(QLatin1String("line")).toInt(-1);
+        if (!chip.isEmpty() && line >= 0) {
+            return chip + QLatin1Char(':') + QString::number(line);
+        }
+        return current;
+    };
+    config.chipSelectLine = readLine("cs", config.chipSelectLine);
+    config.dataCommandLine = readLine("dc", config.dataCommandLine);
+    config.resetLine = readLine("rst", config.resetLine);
 
     const QJsonObject panel = root.value(QLatin1String("panel")).toObject();
     config.panel.width = panel.value(QLatin1String("width")).toInt(config.panel.width);
@@ -93,6 +111,9 @@ QString findConfigFile()
     const QString candidates[] = {
         QStringLiteral("qpa_st7735.json"),
         QStringLiteral("/etc/qpa_st7735.json"),
+        QStringLiteral("/usr/local/etc/qpa_st7735.json"),
+        QStringLiteral("/usr/local/share/qpa_st7735/qpa_st7735.json"),
+        QStringLiteral("/usr/share/qpa_st7735/qpa_st7735.json"),
     };
     for (const QString &candidate : candidates) {
         if (QFileInfo::exists(candidate)) {
@@ -125,20 +146,16 @@ void applyEnvironment(QpaConfig &config)
     struct GpioOverride
     {
         const char *name;
-        int *target;
+        QString *target;
     };
     const GpioOverride overrides[] = {
-        {"QT_SPI_GPIO_CS", &config.chipSelectPin},
-        {"QT_SPI_GPIO_DC", &config.dataCommandPin},
-        {"QT_SPI_GPIO_RST", &config.resetPin},
+        {"QT_SPI_GPIO_CS", &config.chipSelectLine},
+        {"QT_SPI_GPIO_DC", &config.dataCommandLine},
+        {"QT_SPI_GPIO_RST", &config.resetLine},
     };
     for (const GpioOverride &override : overrides) {
-        if (!qEnvironmentVariableIsSet(override.name)) {
-            continue;
-        }
-        bool ok = false;
-        const int value = qEnvironmentVariableIntValue(override.name, &ok);
-        if (ok && value >= 0) {
+        const QString value = qEnvironmentVariable(override.name);
+        if (!value.isEmpty()) {
             *override.target = value;
         }
     }

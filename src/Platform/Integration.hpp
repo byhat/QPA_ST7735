@@ -18,7 +18,7 @@ class QpaSt7735BackingStore;
 class QpaSt7735Screen;
 class QPlatformFontDatabase;
 class SpidevBus;
-class SysfsGpioLine;
+class GpioLine;
 class St7735Driver;
 
 /**
@@ -84,9 +84,9 @@ public:
 private:
     QpaConfig m_config;                            ///< конфигурация плагина
     std::unique_ptr<SpidevBus> m_bus;              ///< SPI-шина
-    std::unique_ptr<SysfsGpioLine> m_chipSelect;   ///< линия CS
-    std::unique_ptr<SysfsGpioLine> m_dataCommand;  ///< линия DC
-    std::unique_ptr<SysfsGpioLine> m_reset;        ///< линия RST
+    std::unique_ptr<GpioLine> m_chipSelect;   ///< линия CS
+    std::unique_ptr<GpioLine> m_dataCommand;  ///< линия DC
+    std::unique_ptr<GpioLine> m_reset;        ///< линия RST
     std::unique_ptr<St7735Driver> m_driver;        ///< драйвер панели
     // m_presenter объявлен после m_driver и разрушается раньше него:
     // поток отправки кадров обязан остановиться до освобождения шины

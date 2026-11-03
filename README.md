@@ -26,6 +26,7 @@ QPA_ST7735/
 │   ├── hal/                SpidevBus (spidev), SysfsGpioLine (sysfs GPIO)
 │   ├── display/            St7735Driver: init, fill, blit
 │   └── example/            st7735-example: draws colored squares at 32 MHz
+├── scripts/setup-permissions.sh  udev rules + input group (no root needed)
 ├── src/                    QPA plugin "qpast7735"
 │   ├── Plugin/             plugin entry point + metadata.json
 │   ├── Platform/           Integration, Screen, Window, Cursor, BackingStore
@@ -38,61 +39,55 @@ QPA_ST7735/
 
 ## Wiring (Orange Pi Zero 3, 26-pin header)
 
-| Display pin | Board pin | Signal  | sysfs GPIO |
-|-------------|-----------|---------|------------|
-| VCC         | 1 or 17   | 3.3V    | -          |
-| GND         | 6/9/14/20/25 | GND  | -          |
+| Display pin | Board pin | Signal  | GPIO line |
+|-------------|-----------|---------|-----------|
+| VCC         | 1 or 17   | 3.3V    | -         |
+| GND         | 6/9/14/20/25 | GND  | -         |
 | SCL (SCK)   | 23        | SPI1 SCLK (PH6) | - (spidev) |
 | SDA (MOSI)  | 19        | SPI1 MOSI (PH7) | - (spidev) |
-| CS          | 26        | PC10    | 74         |
-| DC (A0)     | 22        | PC7     | 71         |
-| RESET       | 18        | PC14    | 78         |
+| CS          | 26        | PC10    | 74        |
+| DC (A0)     | 22        | PC7     | 71        |
+| RESET       | 18        | PC14    | 78        |
 
-GPIO numbers are global kernel line numbers (the "GPIO" column of
-`gpio readall`). SPI must be enabled with a spidev overlay so that
-`/dev/spidev1.1` exists (Armbian: `overlays=spi-spidev` in
-`/boot/armbianEnv.txt`).
+GPIO lines are addressed through libgpiod. SPI must be enabled with a
+spidev overlay so that `/dev/spidev1.1` exists (Orange Pi:
+`overlays=spi1-cs1-spidev` in `/boot/orangepiEnv.txt`).
 
-## Finding GPIO numbers on your board
+## Finding GPIO lines on your board
 
-GPIO numbering differs between boards and SoCs. The numbers used in
-the JSON config and in the wiring table above are **global kernel line
-numbers**, not physical header pins and not WiringPi/wPi numbers. Use
-one of the following ways to find them for your board.
+GPIO is addressed through libgpiod (`/dev/gpiochip*`). Each of `cs`,
+`dc`, `rst` in the config accepts three forms:
 
-**Allwinner formula (H3/H6/H616/H618...).** Pins are named like PC7:
-port letter C, pin 7 inside the port. The global number is
-`(letter - 'A') * 32 + pin`, i.e. ports are 32 lines wide:
+- a **number** — line offset, used only if exactly one chip has it
+  (e.g. `"74"`: on the Zero 3 gpiochip0 is the only chip with 288
+  lines, so 74 unambiguously means PC10);
+- a **line name** from `gpioinfo` (e.g. `"PC10"` on Allwinner,
+  `"GPIO1_B2"` on Rockchip) — searched across all chips;
+- an explicit **`"chip:line"`** (e.g. `"gpiochip0:22"` on
+  Raspberry Pi 5, where offsets are the BCM GPIO numbers) — the most
+  predictable form.
 
-    PC7  -> (3 - 1) * 32 + 7  = 71
-    PC10 -> (3 - 1) * 32 + 10 = 74
-    PC14 -> (3 - 1) * 32 + 14 = 78
+How to find your lines:
 
-**gpioinfo (libgpiod, available on most distros).** Lists every line
-with its name; the number in front is what goes into the config:
+    gpioinfo                       # chips, line counts, names
+    gpiofind PC10                  # where does this name live
+    gpiodetect                     # list chips
 
-    gpioinfo | grep -i "PC7"
+**Orange Pi Zero 3 (H618).** One 288-line chip, ports are 32 lines
+wide: `PC10 -> (2) * 32 + 10 = 74`, `PC7 -> 71`, `PC14 -> 78` (the
+number form works because the second chip has only 32 lines).
 
-**gpio readall (WiringOP).** The "GPIO" column (not "wPi", not
-"Physical") contains the same global numbers. On the Orange Pi Zero 3:
+**Raspberry Pi 5.** Single `gpiochip0`, line offsets are the BCM GPIO
+numbers: use `"gpiochip0:17"` style entries (or bare `"17"`, which is
+unique). The legacy /sys/class/gpio does not exist on this board.
 
-    +------+-----+----------+--------+---+  H616  +---+--------+
-    | GPIO | wPi |   Name   |  Mode  | V | Physical | ...       |
-    |   71 |  13 |      PC7 |   OUT  | 1 |  22 || ...           |
-    |   74 |  16 |     PC10 |   OUT  | 1 |  26 || ...           |
-    |   78 |  10 |     PC14 |   OUT  | 1 |  18 || ...           |
+**Orange Pi 5 (RK3588) and other Rockchip boards.** Several gpiochips;
+prefer line names (`gpioinfo` shows names like `GPIO1_B2`) or explicit
+`"gpiochipN:MM"`. Bare numbers are ambiguous there and the plugin will
+refuse them with the list of matching chips.
 
-**sysfs check.** Export a number and see whether the expected
-directory appears:
-
-    echo 71 | sudo tee /sys/class/gpio/export
-    ls /sys/class/gpio/gpio71   # exists -> the number is valid
-
-Note that line names and offsets can change between kernel versions
-and device-tree overlays; always re-check after a board or kernel
-update. On non-Allwinner boards (Rockchip, Amlogic, ...) use the
-SoC datasheet or `gpioinfo` names — the "32 lines per port" rule does
-not apply there.
+Line names and offsets can change between kernels and device-tree
+overlays; re-check after a board or kernel update.
 
 ## Requirements
 
@@ -101,7 +96,7 @@ and CMake is needed.
 
 On the target board, for the plugin and the demo:
 
-    sudo apt install build-essential cmake \
+    sudo apt install build-essential cmake libgpiod-dev \
         qt6-base-dev qt6-base-private-dev qt6-base-dev-tools
 
 For the QML demo additionally:
@@ -151,9 +146,18 @@ Alternatively skip installation and point Qt at the build directory:
 
 ## Running applications
 
-Root privileges are required for `/dev/spidev*` and GPIO export:
+After installing the plugin run once as root:
 
-    sudo env QT_QPA_PLATFORM=qpast7735 ./your-app
+    sudo sh scripts/setup-permissions.sh
+
+It installs a udev rule that opens `/dev/spidev*` and `/dev/gpiochip*`
+(mode 0666) and adds your user to the `input` group for the mouse and
+keyboard (takes effect after the next login). Applications then run
+without root:
+
+    QT_QPA_PLATFORM=qpast7735 ./your-app
+
+Until the script is run, `sudo` is still required for spidev/GPIO.
 
 Widgets and raster windows work out of the box. Qt Quick (QML) needs
 the software renderer because the plugin provides no OpenGL context:
@@ -202,8 +206,14 @@ The plugin looks for a JSON file in this order (first existing wins):
 
 1. path from `$QPA_ST7735_CONFIG`
 2. `./qpa_st7735.json` in the working directory
-3. `/etc/qpa_st7735.json`
-4. built-in defaults (Orange Pi Zero 3, 32 MHz data speed)
+3. `/etc/qpa_st7735.json` and `/usr/local/etc/qpa_st7735.json`
+4. `/usr/share/qpa_st7735/qpa_st7735.json` — installed by
+   `cmake --install`, so a board-specific config needs no recompiling
+5. built-in defaults (Orange Pi Zero 3, 32 MHz data speed)
+
+To move the plugin to another board, edit the installed
+`/usr/share/qpa_st7735/qpa_st7735.json` (or copy it to `/etc/`): GPIO
+lines, spidev device and panel parameters are all there.
 
 ```json
 {
@@ -221,9 +231,9 @@ Environment variables override JSON (handy for quick experiments):
 |-------------------|-------------------------------------------|
 | `QT_SPI_DEV`      | spidev device path                        |
 | `QT_SPI_SPEED`    | data transfer speed, Hz                   |
-| `QT_SPI_GPIO_CS`  | chip-select GPIO number                   |
-| `QT_SPI_GPIO_DC`  | data/command GPIO number                  |
-| `QT_SPI_GPIO_RST` | reset GPIO number                         |
+| `QT_SPI_GPIO_CS`  | chip-select line: number, name or `chip:line` |
+| `QT_SPI_GPIO_DC`  | data/command line: number, name or `chip:line` |
+| `QT_SPI_GPIO_RST` | reset line: number, name or `chip:line`   |
 | `QT_MOUSE_DEV`    | mouse evdev device, e.g. `/dev/input/event3` |
 
 Notes on speeds: single commands (init sequence) are always sent at
@@ -282,6 +292,10 @@ config:
 ## Troubleshooting
 
 - **White screen**: check wiring (CS/DC/RST), check `ls /dev/spidev*`.
+- **Garbage on the panel**: the DC/CS/RST lines resolve to the wrong
+  GPIO (typical on multi-chip boards like Orange Pi 5) — check the
+  `gpio: линия ... не запросилась` messages and pin the lines with the
+  explicit `"gpiochipN:MM"` form.
 - **Only the first frame renders**: the DC level must be re-asserted
   before every scan line (the library does this); re-check the DC wire.
   If the SPI controller suspends between rare updates, its state is
@@ -314,5 +328,7 @@ These behaviors were verified on the target and are part of `lib/`:
   not used (the CS pin of the display is a regular sysfs GPIO).
 - The DC level is re-asserted before every scan line; without this the
   panel drops the stream after the first frame.
-- GPIO lines are not unexported on destruction: unexporting from one
-  process breaks open lines of another (ENODEV).
+- GPIO lines are released cleanly on exit (libgpiod owns them while
+  the process runs); stale `/sys/class/gpio` exports from old versions
+  block gpiod with EBUSY — remove them with
+  `echo 71 | sudo tee /sys/class/gpio/unexport`.

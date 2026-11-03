@@ -8,10 +8,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Threads REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GPIOD REQUIRED libgpiod)
 
 add_library(st7735 STATIC
     hal/SpidevBus.cpp
-    hal/SysfsGpioLine.cpp
+    hal/GpioLine.cpp
     display/St7735Driver.cpp
 )
 set_property(TARGET st7735 PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -19,6 +21,7 @@ target_include_directories(st7735 PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/hal
     ${CMAKE_CURRENT_SOURCE_DIR}/display
 )
-target_link_libraries(st7735 PUBLIC Threads::Threads)
+target_link_libraries(st7735 PUBLIC Threads::Threads ${GPIOD_LIBRARIES})
+target_include_directories(st7735 PUBLIC ${GPIOD_INCLUDE_DIRS})
 
 add_subdirectory(example)

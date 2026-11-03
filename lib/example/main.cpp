@@ -2,14 +2,14 @@
  * @file main.cpp
  * @brief Демонстрация драйвера ST7735: сборка слоёв и заливка цветами.
  *
- * Слои собираются здесь: SpidevBus и SysfsGpioLine (доступ к железу)
+ * Слои собираются здесь: SpidevBus и GpioLine (доступ к железу)
  * передаются в St7735Driver по ссылке. Кадры формируются вектором
  * пикселей RGB565 и отдаются драйверу через blit() - тот же контракт,
  * что у QPA-плагина.
  */
 
 #include "SpidevBus.hpp"
-#include "SysfsGpioLine.hpp"
+#include "GpioLine.hpp"
 #include "St7735Driver.hpp"
 
 #include <cstdint>
@@ -25,10 +25,11 @@ namespace {
 /// Путь к SPI-устройству шины дисплея (SPI1, CS1).
 constexpr const char *kSpiDevice = "/dev/spidev1.1";
 
-/// Глобальные номера GPIO-линий Orange Pi Zero 3 (колонка GPIO в gpio readall).
-constexpr int kChipSelectPin = 74;  ///< PC10, физический пин 26
-constexpr int kDataCommandPin = 71; ///< PC7, физический пин 22
-constexpr int kResetPin = 78;       ///< PC14, физический пин 18
+/// Линии GPIO Orange Pi Zero 3: номер = смещение в gpiochip0 (PC10 = 64+10).
+/// На других платах подставьте имя линии из gpioinfo или "gpiochipN:MM".
+constexpr const char *kChipSelectLine = "74";   ///< PC10, физический пин 26
+constexpr const char *kDataCommandLine = "71";  ///< PC7, физический пин 22
+constexpr const char *kResetLine = "78";        ///< PC14, физический пин 18
 
 /// Параметры панели и скоростей: одиночные команды - 1 МГц, данные - 32 МГц.
 constexpr St7735Driver::Config kPanelConfig = {
@@ -57,9 +58,9 @@ int main()
 {
     try {
         SpidevBus spiBus(kSpiDevice);
-        SysfsGpioLine chipSelect(kChipSelectPin);
-        SysfsGpioLine dataCommand(kDataCommandPin);
-        SysfsGpioLine reset(kResetPin);
+        GpioLine chipSelect(kChipSelectLine, "st7735-example");
+        GpioLine dataCommand(kDataCommandLine, "st7735-example");
+        GpioLine reset(kResetLine, "st7735-example");
 
         St7735Driver driver(spiBus, chipSelect, dataCommand, reset, kPanelConfig);
         driver.initialize();
